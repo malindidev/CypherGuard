@@ -14,7 +14,7 @@
   const resultEl = document.getElementById('result');
   const warningEl = document.getElementById('warning');
 
-  const strengthMeterEl = document.getElementById('strengthMeter'); // ADDED
+  const strengthMeterEl = document.getElementById('strengthMeter'); // Passphrase strength meter
 
   // Crypto settings
   const PBKDF2_ITERATIONS = 100000;
@@ -260,6 +260,9 @@
     }
   }
 
+  /* ---------------- Copy result to clipboard ---------------- */
+  let copyTimeout;
+
   async function copyResult() {
     const text = resultEl.textContent;
     if (!text) {
@@ -268,9 +271,7 @@
     }
     try {
       await navigator.clipboard.writeText(text);
-      const original = copyBtn.textContent;
-      copyBtn.textContent = 'Copied';
-      setTimeout(() => { copyBtn.textContent = original; }, 1300);
+      resetCopyButtonText();
     } catch (e) {
       // fallback
       try {
@@ -280,21 +281,29 @@
         ta.select();
         document.execCommand('copy');
         ta.remove();
-        const original = copyBtn.textContent;
-        copyBtn.textContent = 'Copied';
-        setTimeout(() => { copyBtn.textContent = original; }, 1300);
+        resetCopyButtonText();
       } catch (err) {
         showWarning('Unable to copy—your browser may block clipboard access.');
       }
     }
   }
 
+  function resetCopyButtonText() {
+    clearTimeout(copyTimeout);
+    const original = copyBtn.textContent;
+    copyBtn.textContent = 'Copied';
+    copyTimeout = setTimeout(() => {
+      copyBtn.textContent = original;
+    }, 1300);
+  }
+
+  /* ---------------- Clear inputs and output ---------------- */
   function clearAll() {
     messageEl.value = '';
     keyEl.value = '';
     clearWarning();
     clearResult();
-    updateStrengthMeter(); // ADDED to reset meter on clear
+    updateStrengthMeter(); // Reset strength meter on clear
   }
 
   /* ---------------- QR CODE SECTION ---------------- */
@@ -380,9 +389,10 @@
   // Clear warnings when user types
   [messageEl, keyEl].forEach(el => el.addEventListener('input', clearWarning));
 
-  keyEl.addEventListener('input', updateStrengthMeter); // ADDED: update meter live
+  // Update strength meter live
+  keyEl.addEventListener('input', updateStrengthMeter);
 
-  // Initialise
+  // Initialise UI
   clearResult();
-  updateStrengthMeter(); // ADDED: initialise meter on load
+  updateStrengthMeter();
 })();
