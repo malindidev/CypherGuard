@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+	<link rel="icon" href="logo.png" type="image/png" />
+  <title>CypherGuard</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <div class="card">
+      <header class="card__header">
+  <img src="logo.png" alt="Logo" class="logo" />
+  <div class="header-text">
+    <h1 class="title">Encryptor • Decryptor</h1>
+    <p class="subtitle">AES-GCM + PBKDF2 (client-side). Enter a message and a passphrase.</p>
+  </div>
+</header>
+
+      <form id="cryptoForm" class="form" autocomplete="off" onsubmit="return false;">
+        <label class="field">
+          <span class="field__label">Message</span>
+          <textarea id="message" class="input input--textarea" rows="4" placeholder="Type or paste your message..."></textarea>
+        </label>
+
+        <div class="row">
+          <label class="field field--small">
+            <span class="field__label">Passphrase</span>
+            <input id="key" class="input" type="password" placeholder="Enter a passphrase (min 6 characters)" />
+          </label>
+
+          <div class="actions">
+            <button id="encryptBtn" class="btn btn--primary" type="button">Encrypt</button>
+            <button id="decryptBtn" class="btn" type="button">Decrypt</button>
+          </div>
+        </div>
+
+        <div id="warning" class="warning" aria-live="polite"></div>
+
+        <div id="resultCard" class="result" aria-hidden="true">
+          <div class="result__meta">
+            <span class="result__label">Result</span>
+            <div class="result__controls">
+              <button id="copyBtn" class="icon-btn" title="Copy result to clipboard" type="button">Copy</button>
+              <button id="clearBtn" class="icon-btn" title="Clear" type="button">Clear</button>
+              <button id="qrToggleBtn" class="icon-btn" title="Show QR Code" type="button">QR</button>
+            </div>
+          </div>
+
+          <pre id="result" class="result__text" tabindex="0" aria-label="Encrypted or decrypted message"></pre>
+
+          <!-- QR container (hidden until toggled) -->
+          <div id="qrContainer" class="qr-container" aria-hidden="true">
+            <div id="qrCode" aria-hidden="true"></div>
+            <div class="qr__actions">
+              <button id="downloadQRBtn" class="btn btn--primary" type="button">Download QR</button>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      <footer class="card__footer">
+        <small>AES-GCM (256-bit key derived via PBKDF2). Works entirely in the browser - ensure you use HTTPS for production.</small>
+      </footer>
+    </div>
+  </main>
+
+  <!-- Local QR code library (save qrcode.min.js to project) -->
+  <script src="qrcode.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
