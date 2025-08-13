@@ -1,9 +1,12 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
+  <!-- QR decoding library -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-	<link rel="icon" href="logo.png" type="image/png" />
+  <link rel="icon" href="logo.png" type="image/png" />
   <title>CypherGuard</title>
 
   <!-- Font -->
@@ -15,12 +18,12 @@
   <main class="app">
     <div class="card">
       <header class="card__header">
-  <img src="logo.png" alt="Logo" class="logo" />
-  <div class="header-text">
-    <h1 class="title">Encryptor • Decryptor</h1>
-    <p class="subtitle">AES-GCM + PBKDF2 (client-side). Enter a message and a passphrase.</p>
-  </div>
-</header>
+        <img src="logo.png" alt="Logo" class="logo" />
+        <div class="header-text">
+          <h1 class="title">Encryptor • Decryptor</h1>
+          <p class="subtitle">AES-GCM + PBKDF2 (client-side). Enter a message and a passphrase.</p>
+        </div>
+      </header>
 
       <form id="cryptoForm" class="form" autocomplete="off" onsubmit="return false;">
         <label class="field">
@@ -49,6 +52,10 @@
               <button id="copyBtn" class="icon-btn" title="Copy result to clipboard" type="button">Copy</button>
               <button id="clearBtn" class="icon-btn" title="Clear" type="button">Clear</button>
               <button id="qrToggleBtn" class="icon-btn" title="Show QR Code" type="button">QR</button>
+
+              <!-- Upload QR -->
+              <button id="uploadQRBtn" class="icon-btn" title="Upload QR Code" type="button">Upload QR</button>
+              <input type="file" id="qrFileInput" accept="image/*" style="display:none">
             </div>
           </div>
 
@@ -70,8 +77,15 @@
     </div>
   </main>
 
-  <!-- Local QR code library (save qrcode.min.js to project) -->
+  <!-- Local QR code library -->
   <script src="qrcode.min.js"></script>
   <script src="script.js"></script>
+
+  <script>
+    // Make upload button open file picker
+    document.getElementById('uploadQRBtn').addEventListener('click', () => {
+      document.getElementById('qrFileInput').click();
+    });
+  </script>
 </body>
 </html>
