@@ -13,14 +13,17 @@
   const resultCard = document.getElementById('resultCard');
   const resultEl = document.getElementById('result');
   const warningEl = document.getElementById('warning');
+  const togglePassVisibilityBtn = document.getElementById('togglePassVisibility');
 
-  const strengthMeterEl = document.getElementById('strengthMeter'); // Passphrase strength meter
+  // New: QR file input & button
+  const qrFileInput = document.getElementById('qrFileInput');
+  const uploadQRBtn = document.getElementById('uploadQRBtn');
 
   // Crypto settings
   const PBKDF2_ITERATIONS = 100000;
-  const SALT_BYTES = 16;   // 128-bit salt
-  const IV_BYTES = 12;     // 96-bit IV recommended for AES-GCM
-  const KEY_LENGTH = 256;  // AES-256
+  const SALT_BYTES = 16;
+  const IV_BYTES = 12;
+  const KEY_LENGTH = 256;
 
   // QR state
   let qrGenerated = false;
@@ -41,8 +44,6 @@
     resultEl.textContent = text;
     resultCard.setAttribute('aria-hidden', 'false');
     resultEl.setAttribute('aria-live', 'polite');
-
-    // Reset QR state for the new result
     qrContainer.classList.remove('show');
     qrContainer.setAttribute('aria-hidden', 'true');
     qrGenerated = false;
@@ -52,7 +53,6 @@
     resultEl.textContent = '';
     resultCard.setAttribute('aria-hidden', 'true');
     resultEl.removeAttribute('aria-live');
-
     qrContainer.classList.remove('show');
     qrContainer.setAttribute('aria-hidden', 'true');
     qrGenerated = false;
@@ -70,7 +70,6 @@
     }
     return tmp.buffer;
   }
-
   function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = '';
@@ -80,7 +79,6 @@
     }
     return btoa(binary);
   }
-
   function base64ToArrayBuffer(base64) {
     const binary = atob(base64);
     const len = binary.length;
@@ -90,7 +88,6 @@
     }
     return bytes.buffer;
   }
-
   function getRandomBytes(length) {
     return crypto.getRandomValues(new Uint8Array(length)).buffer;
   }
@@ -105,8 +102,7 @@
       false,
       ['deriveKey']
     );
-
-    const derivedKey = await crypto.subtle.deriveKey(
+    return crypto.subtle.deriveKey(
       {
         name: 'PBKDF2',
         salt: salt,
@@ -118,28 +114,21 @@
       false,
       ['encrypt', 'decrypt']
     );
-
-    return derivedKey;
   }
 
-  // Encrypt plaintext -> Base64(salt || iv || ciphertext)
   async function encryptString(plaintext, passphrase) {
     const salt = getRandomBytes(SALT_BYTES);
     const iv = getRandomBytes(IV_BYTES);
     const key = await deriveKeyFromPassphrase(passphrase, salt);
-
     const encoded = new TextEncoder().encode(plaintext);
     const cipherBuffer = await crypto.subtle.encrypt(
       { name: 'AES-GCM', iv: new Uint8Array(iv) },
       key,
       encoded
     );
-
-    const joined = concatArrayBuffers(salt, iv, cipherBuffer);
-    return arrayBufferToBase64(joined);
+    return arrayBufferToBase64(concatArrayBuffers(salt, iv, cipherBuffer));
   }
 
-  // Decrypt Base64 payload that contains salt || iv || ciphertext
   async function decryptString(payloadBase64, passphrase) {
     const full = base64ToArrayBuffer(payloadBase64);
     if (full.byteLength < (SALT_BYTES + IV_BYTES + 1)) {
@@ -149,7 +138,6 @@
     const salt = fullBytes.slice(0, SALT_BYTES).buffer;
     const iv = fullBytes.slice(SALT_BYTES, SALT_BYTES + IV_BYTES).buffer;
     const ciphertext = fullBytes.slice(SALT_BYTES + IV_BYTES).buffer;
-
     const key = await deriveKeyFromPassphrase(passphrase, salt);
     const plainBuffer = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: new Uint8Array(iv) },
@@ -159,62 +147,31 @@
     return new TextDecoder().decode(plainBuffer);
   }
 
-  /* ---------------- Passphrase strength meter ---------------- */
-  function updateStrengthMeter() {
-    const pass = keyEl.value;
-    const meter = strengthMeterEl;
-    const minLength = 6;
-    let score = 0;
-
-    if (pass.length >= minLength) score++;
-    if (/[a-z]/.test(pass)) score++;
-    if (/[A-Z]/.test(pass)) score++;
-    if (/\d/.test(pass)) score++;
-    if (/[^A-Za-z0-9]/.test(pass)) score++;
-
-    const strengthTexts = ['Very Weak', 'Weak', 'Moderate', 'Strong', 'Very Strong'];
-    const strengthColors = ['#d9534f', '#f0ad4e', '#f7e967', '#5bc0de', '#5cb85c'];
-
-    if (!pass) {
-      meter.textContent = '';
-      meter.style.color = '';
-      return;
-    }
-
-    meter.textContent = `Passphrase strength: ${strengthTexts[score - 1] || 'Very Weak'}`;
-    meter.style.color = strengthColors[score - 1] || '#d9534f';
-  }
-
   /* ---------------- UI actions ---------------- */
   async function handleEncrypt() {
     clearWarning();
-
     if (!window.crypto || !crypto.subtle) {
-      showWarning('Web Crypto API not supported in this browser. Use a modern browser/HTTPS.');
+      showWarning('Web Crypto API not supported in this browser.');
       return;
     }
-
     const plaintext = messageEl.value;
     const pass = keyEl.value;
-
     if (!plaintext || !plaintext.trim()) {
       clearResult();
       showWarning('Please enter a message to encrypt.');
       return;
     }
     if (!pass || pass.length < 6) {
-      showWarning('Please enter a passphrase (minimum 6 characters).');
+      showWarning('Passphrase must be at least 6 characters.');
       return;
     }
-
     try {
       encryptBtn.disabled = true;
       encryptBtn.textContent = 'Encrypting…';
-      const b64 = await encryptString(plaintext, pass);
-      showResult(b64);
+      showResult(await encryptString(plaintext, pass));
     } catch (err) {
       console.error(err);
-      showWarning('Encryption failed — check console for details.');
+      showWarning('Encryption failed.');
     } finally {
       encryptBtn.disabled = false;
       encryptBtn.textContent = 'Encrypt';
@@ -223,46 +180,36 @@
 
   async function handleDecrypt() {
     clearWarning();
-
     if (!window.crypto || !crypto.subtle) {
-      showWarning('Web Crypto API not supported in this browser. Use a modern browser/HTTPS.');
+      showWarning('Web Crypto API not supported in this browser.');
       return;
     }
-
     const payload = messageEl.value.trim();
     const pass = keyEl.value;
-
     if (!payload) {
       clearResult();
-      showWarning('Please paste the Base64 payload to decrypt in the message field.');
+      showWarning('Please paste the Base64 payload.');
       return;
     }
     if (!pass || pass.length < 6) {
-      showWarning('Please enter the passphrase used when encrypting (minimum 6 characters).');
+      showWarning('Passphrase must be at least 6 characters.');
       return;
     }
-
     try {
       decryptBtn.disabled = true;
       decryptBtn.textContent = 'Decrypting…';
-      const plain = await decryptString(payload, pass);
-      showResult(plain);
+      showResult(await decryptString(payload, pass));
     } catch (err) {
       console.error(err);
-      if (err instanceof DOMException || /authentication/i.test(err.message) || /tag mismatch/i.test(err.message)) {
-        showWarning('Failed to decrypt — the passphrase may be incorrect or the payload is invalid.');
-      } else {
-        showWarning('Decryption failed — payload may be corrupted or invalid.');
-      }
+      showWarning('Failed to decrypt — passphrase may be wrong.');
     } finally {
       decryptBtn.disabled = false;
       decryptBtn.textContent = 'Decrypt';
     }
   }
 
-  /* ---------------- Copy result to clipboard ---------------- */
+  /* ---------------- Copy result ---------------- */
   let copyTimeout;
-
   async function copyResult() {
     const text = resultEl.textContent;
     if (!text) {
@@ -272,53 +219,40 @@
     try {
       await navigator.clipboard.writeText(text);
       resetCopyButtonText();
-    } catch (e) {
-      // fallback
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        ta.remove();
-        resetCopyButtonText();
-      } catch (err) {
-        showWarning('Unable to copy—your browser may block clipboard access.');
-      }
+    } catch {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      ta.remove();
+      resetCopyButtonText();
     }
   }
-
   function resetCopyButtonText() {
     clearTimeout(copyTimeout);
     const original = copyBtn.textContent;
     copyBtn.textContent = 'Copied';
-    copyTimeout = setTimeout(() => {
-      copyBtn.textContent = original;
-    }, 1300);
+    copyTimeout = setTimeout(() => { copyBtn.textContent = original; }, 1300);
   }
 
-  /* ---------------- Clear inputs and output ---------------- */
+  /* ---------------- Clear ---------------- */
   function clearAll() {
     messageEl.value = '';
     keyEl.value = '';
     clearWarning();
     clearResult();
-    updateStrengthMeter(); // Reset strength meter on clear
   }
 
-  /* ---------------- QR CODE SECTION ---------------- */
+  /* ---------------- QR Code ---------------- */
   function toggleQR() {
     if (qrContainer.classList.contains('show')) {
       qrContainer.classList.remove('show');
       qrContainer.setAttribute('aria-hidden', 'true');
       return;
     }
-
-    // If we haven't generated the QR for the current result, do so
     if (!qrGenerated) {
-      qrCodeEl.innerHTML = '';
       try {
-        // QRCode library (qrcode.min.js) - CorrectLevel available on global
         qrInstance = new QRCode(qrCodeEl, {
           text: resultEl.textContent,
           width: 240,
@@ -329,8 +263,8 @@
         });
         qrGenerated = true;
       } catch (err) {
-        console.error('QR generation failed:', err);
-        showWarning('Unable to generate QR code.');
+        console.error(err);
+        showWarning('QR generation failed.');
         return;
       }
     }
@@ -340,17 +274,11 @@
 
   function downloadQR() {
     if (!qrGenerated) return;
-    // QRCode.js outputs either canvas or img depending on browser; prefer canvas
     const canvas = qrCodeEl.querySelector('canvas');
     const img = qrCodeEl.querySelector('img');
-    let dataUrl = null;
-    if (canvas) {
-      dataUrl = canvas.toDataURL('image/png');
-    } else if (img && img.src) {
-      dataUrl = img.src;
-    }
+    let dataUrl = canvas ? canvas.toDataURL('image/png') : (img && img.src ? img.src : null);
     if (!dataUrl) {
-      showWarning('No QR image available to download.');
+      showWarning('No QR image to download.');
       return;
     }
     const link = document.createElement('a');
@@ -361,6 +289,34 @@
     link.remove();
   }
 
+  /* ---------------- QR File Scan + Decrypt ---------------- */
+  async function handleQRFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    try {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, img.width, img.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, canvas.width, canvas.height);
+        if (!code) {
+          showWarning('No QR code found.');
+          return;
+        }
+        messageEl.value = code.data;
+        showWarning('QR code loaded — enter passphrase to decrypt.');
+      };
+    } catch (err) {
+      console.error(err);
+      showWarning('Failed to process QR image.');
+    }
+  }
+
   /* ---------------- Event listeners ---------------- */
   encryptBtn.addEventListener('click', handleEncrypt);
   decryptBtn.addEventListener('click', handleDecrypt);
@@ -369,30 +325,13 @@
   qrToggleBtn.addEventListener('click', toggleQR);
   downloadQRBtn.addEventListener('click', downloadQR);
 
-  // Focus result when visible (after animation)
-  const observer = new MutationObserver(() => {
-    const visible = resultCard.getAttribute('aria-hidden') === 'false';
-    if (visible && resultEl.textContent) {
-      setTimeout(() => resultEl.focus(), 220);
-    }
-  });
-  observer.observe(resultCard, { attributes: true });
+  // NEW: Upload QR button triggers file picker
+  if (uploadQRBtn && qrFileInput) {
+    uploadQRBtn.addEventListener('click', () => {
+      qrFileInput.click();
+    });
+    qrFileInput.addEventListener('change', handleQRFileUpload);
+  }
 
-  // Pressing Enter in passphrase triggers encrypt
-  keyEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleEncrypt();
-    }
-  });
-
-  // Clear warnings when user types
-  [messageEl, keyEl].forEach(el => el.addEventListener('input', clearWarning));
-
-  // Update strength meter live
-  keyEl.addEventListener('input', updateStrengthMeter);
-
-  // Initialise UI
   clearResult();
-  updateStrengthMeter();
 })();
