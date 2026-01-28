@@ -13,7 +13,6 @@
   const resultEl = document.getElementById('result');
   const warningEl = document.getElementById('warning');
   const togglePassVisibilityBtn = document.getElementById('togglePassVisibility');
-
   const qrFileInput = document.getElementById('qrFileInput');
   const uploadQRBtn = document.getElementById('uploadQRBtn');
 
@@ -24,12 +23,14 @@
 
   let qrGenerated = false;
   let qrInstance = null;
+  let copyTimeout;
 
   function showWarning(text) {
     warningEl.textContent = text;
     warningEl.classList.add('show', 'shake');
     setTimeout(() => warningEl.classList.remove('shake'), 450);
   }
+
   function clearWarning() {
     warningEl.textContent = '';
     warningEl.classList.remove('show');
@@ -44,6 +45,7 @@
     qrGenerated = false;
     qrCodeEl.innerHTML = '';
   }
+
   function clearResult() {
     resultEl.textContent = '';
     resultCard.setAttribute('aria-hidden', 'true');
@@ -64,6 +66,7 @@
     }
     return tmp.buffer;
   }
+
   function arrayBufferToBase64(buffer) {
     const bytes = new Uint8Array(buffer);
     let binary = '';
@@ -73,6 +76,7 @@
     }
     return btoa(binary);
   }
+
   function base64ToArrayBuffer(base64) {
     const binary = atob(base64);
     const len = binary.length;
@@ -82,6 +86,7 @@
     }
     return bytes.buffer;
   }
+
   function getRandomBytes(length) {
     return crypto.getRandomValues(new Uint8Array(length)).buffer;
   }
@@ -198,8 +203,8 @@
       decryptBtn.disabled = false;
       decryptBtn.textContent = 'Decrypt';
     }
+  }
 
-  let copyTimeout;
   async function copyResult() {
     const text = resultEl.textContent;
     if (!text) {
@@ -219,6 +224,7 @@
       resetCopyButtonText();
     }
   }
+
   function resetCopyButtonText() {
     clearTimeout(copyTimeout);
     const original = copyBtn.textContent;
@@ -312,9 +318,7 @@
   downloadQRBtn.addEventListener('click', downloadQR);
 
   if (uploadQRBtn && qrFileInput) {
-    uploadQRBtn.addEventListener('click', () => {
-      qrFileInput.click();
-    });
+    uploadQRBtn.addEventListener('click', () => { qrFileInput.click(); });
     qrFileInput.addEventListener('change', handleQRFileUpload);
   }
 
