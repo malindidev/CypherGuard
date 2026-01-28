@@ -1,13 +1,9 @@
-/* Light Modern Minimal — style.css
-   Uses Poppins font (linked in HTML)
-*/
-
 :root{
   --bg: #f7f8fa;
   --card: #ffffff;
   --muted: #7b8794;
-  --accent: #3563f7;     /* primary accent */
-  --accent-2: #00bfa6;   /* subtle secondary accent for micro-interactions */
+  --accent: #3563f7;
+  --accent-2: #00bfa6;
   --danger: #e64b4b;
   --glass: rgba(53,99,247,0.06);
   --radius: 14px;
@@ -28,7 +24,6 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   padding:28px;
 }
 
-/* Card */
 .card{
   width:100%;
   max-width:860px;
@@ -41,17 +36,14 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   gap:18px;
 }
 
-/* Header */
 .card__header { margin-bottom:2px; }
 .title { margin:0; font-size:20px; font-weight:600; color:#111827; }
 .subtitle { margin:6px 0 0 0; font-size:13px; color:var(--muted); }
 
-/* Form layout */
 .form { display:flex; flex-direction:column; gap:14px; }
 .field { display:flex; flex-direction:column; gap:8px; }
 .field__label { font-size:12px; color:var(--muted); }
 
-/* Inputs */
 .input {
   background: transparent;
   border:1px solid rgba(16,24,40,0.06);
@@ -70,15 +62,12 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   transform: translateY(-1px);
 }
 
-/* textarea slightly larger */
 .input--textarea { min-height:110px; resize:vertical; }
 
-/* row: key + buttons */
 .row { display:flex; gap:12px; align-items:flex-end; flex-wrap:wrap; }
 .field--small { flex:1 1 220px; min-width:180px; }
 .actions { display:flex; gap:10px; flex:1 1 300px; justify-content:flex-end; }
 
-/* Buttons */
 .btn {
   border:1px solid rgba(16,24,40,0.06);
   background:transparent;
@@ -100,7 +89,6 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
 }
 .btn--primary:hover { box-shadow: 0 14px 40px rgba(53,99,247,0.14); }
 
-/* small icon-like controls */
 .icon-btn {
   background: transparent;
   border: 1px solid rgba(16,24,40,0.06);
@@ -112,7 +100,6 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
 }
 .icon-btn:hover { transform: translateY(-3px); }
 
-/* Warning message */
 .warning {
   min-height:20px;
   color: var(--danger);
@@ -123,7 +110,6 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
 }
 .warning.show { opacity:1; transform: translateY(0); }
 
-/* Result card */
 .result {
   margin-top:6px;
   border-radius:12px;
@@ -155,10 +141,8 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   overflow:auto;
 }
 
-/* footer */
 .card__footer { color:var(--muted); font-size:12px; }
 
-/* small screens */
 @media (max-width:640px){
   .card { padding:18px; border-radius:12px; }
   .actions { justify-content:stretch; gap:8px; }
@@ -166,13 +150,11 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   .row { align-items:flex-start; }
 }
 
-/* Minor accessibility focus ring */
 .input:focus, .btn:focus, .icon-btn:focus, .result__text:focus {
   outline: 3px solid rgba(53,99,247,0.12);
   outline-offset: 3px;
 }
 
-/* subtle shake animation for errors */
 @keyframes shake {
   0% { transform: translateX(0); }
   20% { transform: translateX(-6px); }
@@ -182,7 +164,7 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   100% { transform: translateX(0); }
 }
 .warning.shake { animation: shake .42s cubic-bezier(.36,.07,.19,.97); }
-/* QR Code container */
+
 .qr-container {
   display: flex;
   flex-direction: column;
@@ -211,7 +193,8 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
 }
 
 .logo {
-  width: 40px; /* adjust as needed */
+  width: 40px;
   height: auto;
   user-select: none;
+
 }
