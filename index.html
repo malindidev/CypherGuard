@@ -1,15 +1,13 @@
 <!doctype html>
 <html lang="en-GB">
 <head>
-  <!-- QR decoding library -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="logo.png" type="image/png" />
   <title>CypherGuard</title>
-
-  <!-- Font -->
+  
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="style.css">
@@ -53,7 +51,6 @@
               <button id="clearBtn" class="icon-btn" title="Clear" type="button">Clear</button>
               <button id="qrToggleBtn" class="icon-btn" title="Show QR Code" type="button">QR</button>
 
-              <!-- Upload QR -->
               <button id="uploadQRBtn" class="icon-btn" title="Upload QR Code" type="button">Upload QR</button>
               <input type="file" id="qrFileInput" accept="image/*" style="display:none">
             </div>
@@ -61,7 +58,6 @@
 
           <pre id="result" class="result__text" tabindex="0" aria-label="Encrypted or decrypted message"></pre>
 
-          <!-- QR container (hidden until toggled) -->
           <div id="qrContainer" class="qr-container" aria-hidden="true">
             <div id="qrCode" aria-hidden="true"></div>
             <div class="qr__actions">
@@ -77,12 +73,10 @@
     </div>
   </main>
 
-  <!-- Local QR code library -->
   <script src="qrcode.min.js"></script>
   <script src="script.js"></script>
 
   <script>
-    // Make upload button open file picker
     document.getElementById('uploadQRBtn').addEventListener('click', () => {
       document.getElementById('qrFileInput').click();
     });
