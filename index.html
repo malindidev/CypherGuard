@@ -25,13 +25,13 @@
 
       <form id="cryptoForm" class="form" autocomplete="off" onsubmit="return false;">
         <label class="field">
-          <span class="field_label">Message</span>
+          <span class="field__label">Message</span>
           <textarea id="message" class="input input--textarea" rows="4" placeholder="Type or paste your message..."></textarea>
         </label>
 
         <div class="row">
           <label class="field field--small">
-            <span class="field_label">Passphrase</span>
+            <span class="field__label">Passphrase</span>
             <input id="key" class="input" type="password" placeholder="Enter a passphrase (min 6 characters)" />
           </label>
 
@@ -44,9 +44,9 @@
         <div id="warning" class="warning" aria-live="polite"></div>
 
         <div id="resultCard" class="result" aria-hidden="true">
-          <div class="result_meta">
-            <span class="result_label">Result</span>
-            <div class="result_controls">
+          <div class="result__meta">
+            <span class="result__label">Result</span>
+            <div class="result__controls">
               <button id="copyBtn" class="icon-btn" title="Copy result to clipboard" type="button">Copy</button>
               <button id="clearBtn" class="icon-btn" title="Clear" type="button">Clear</button>
               <button id="qrToggleBtn" class="icon-btn" title="Show QR Code" type="button">QR</button>
@@ -83,3 +83,4 @@
   </script>
 </body>
 </html>
+
