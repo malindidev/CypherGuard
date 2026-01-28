@@ -1,5 +1,4 @@
 (() => {
-  // DOM
   const messageEl = document.getElementById('message');
   const keyEl = document.getElementById('key');
   const encryptBtn = document.getElementById('encryptBtn');
@@ -15,21 +14,17 @@
   const warningEl = document.getElementById('warning');
   const togglePassVisibilityBtn = document.getElementById('togglePassVisibility');
 
-  // New: QR file input & button
   const qrFileInput = document.getElementById('qrFileInput');
   const uploadQRBtn = document.getElementById('uploadQRBtn');
 
-  // Crypto settings
   const PBKDF2_ITERATIONS = 100000;
   const SALT_BYTES = 16;
   const IV_BYTES = 12;
   const KEY_LENGTH = 256;
 
-  // QR state
   let qrGenerated = false;
   let qrInstance = null;
 
-  /* ---------------- UI helpers ---------------- */
   function showWarning(text) {
     warningEl.textContent = text;
     warningEl.classList.add('show', 'shake');
@@ -59,7 +54,6 @@
     qrCodeEl.innerHTML = '';
   }
 
-  /* ---------------- low-level helpers ---------------- */
   function concatArrayBuffers(...buffers) {
     const total = buffers.reduce((sum, b) => sum + b.byteLength, 0);
     const tmp = new Uint8Array(total);
@@ -92,7 +86,6 @@
     return crypto.getRandomValues(new Uint8Array(length)).buffer;
   }
 
-  /* ---------------- crypto functions ---------------- */
   async function deriveKeyFromPassphrase(passphrase, salt) {
     const enc = new TextEncoder();
     const baseKey = await crypto.subtle.importKey(
@@ -147,7 +140,6 @@
     return new TextDecoder().decode(plainBuffer);
   }
 
-  /* ---------------- UI actions ---------------- */
   async function handleEncrypt() {
     clearWarning();
     if (!window.crypto || !crypto.subtle) {
@@ -201,14 +193,12 @@
       showResult(await decryptString(payload, pass));
     } catch (err) {
       console.error(err);
-      showWarning('Failed to decrypt — passphrase may be wrong.');
+      showWarning('Failed to decrypt - passphrase may be wrong.');
     } finally {
       decryptBtn.disabled = false;
       decryptBtn.textContent = 'Decrypt';
     }
-  }
 
-  /* ---------------- Copy result ---------------- */
   let copyTimeout;
   async function copyResult() {
     const text = resultEl.textContent;
@@ -236,7 +226,6 @@
     copyTimeout = setTimeout(() => { copyBtn.textContent = original; }, 1300);
   }
 
-  /* ---------------- Clear ---------------- */
   function clearAll() {
     messageEl.value = '';
     keyEl.value = '';
@@ -244,7 +233,6 @@
     clearResult();
   }
 
-  /* ---------------- QR Code ---------------- */
   function toggleQR() {
     if (qrContainer.classList.contains('show')) {
       qrContainer.classList.remove('show');
@@ -289,7 +277,6 @@
     link.remove();
   }
 
-  /* ---------------- QR File Scan + Decrypt ---------------- */
   async function handleQRFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -317,7 +304,6 @@
     }
   }
 
-  /* ---------------- Event listeners ---------------- */
   encryptBtn.addEventListener('click', handleEncrypt);
   decryptBtn.addEventListener('click', handleDecrypt);
   copyBtn.addEventListener('click', copyResult);
@@ -325,7 +311,6 @@
   qrToggleBtn.addEventListener('click', toggleQR);
   downloadQRBtn.addEventListener('click', downloadQR);
 
-  // NEW: Upload QR button triggers file picker
   if (uploadQRBtn && qrFileInput) {
     uploadQRBtn.addEventListener('click', () => {
       qrFileInput.click();
