@@ -51,6 +51,10 @@
               <button id="clearBtn" class="icon-btn" title="Clear" type="button">Clear</button>
               <button id="qrToggleBtn" class="icon-btn" title="Show QR Code" type="button">QR</button>
 
+              <button id="scanQRBtn" class="icon-btn" title="Scan QR using camera" type="button">
+                Scan QR
+              </button>
+
               <button id="uploadQRBtn" class="icon-btn" title="Upload QR Code" type="button">Upload QR</button>
               <input type="file" id="qrFileInput" accept="image/*" style="display:none">
             </div>
@@ -68,10 +72,18 @@
       </form>
 
       <footer class="card__footer">
-        <small>AES-GCM (256-bit key derived via PBKDF2). Works entirely in the browser - ensure you use HTTPS for production.</small>
+        <small>
+          AES-GCM (256-bit key derived via PBKDF2).
+          Works entirely in the browser — ensure you use HTTPS for production.
+        </small>
       </footer>
     </div>
   </main>
+
+  <div id="cameraModal" class="camera-modal" aria-hidden="true">
+    <video id="qrVideo" autoplay playsinline></video>
+    <button id="closeScanBtn" class="btn">Close</button>
+  </div>
 
   <script src="qrcode.min.js"></script>
   <script src="script.js"></script>
@@ -83,6 +95,3 @@
   </script>
 </body>
 </html>
-
-
-
