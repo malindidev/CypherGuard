@@ -24,7 +24,7 @@ CypherGuard is a browser-based client-side encryption and decryption tool using 
 
 > ⚠️ Always use HTTPS when using encryption tools in production for security.
 >
-> **https://cg.bbnerds.com**
+> > **[Click Me!](https://cg.bbnerds.com)**
 
 ---
 
