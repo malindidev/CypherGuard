@@ -198,3 +198,25 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   user-select: none;
 
 }
+
+.camera-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  z-index: 1000;
+}
+
+.camera-modal[aria-hidden="false"] {
+  display: flex;
+}
+
+#qrVideo {
+  width: 90%;
+  max-width: 360px;
+  border-radius: 12px;
+  background: #000;
+}
