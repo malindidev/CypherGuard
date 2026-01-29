@@ -339,9 +339,9 @@ function resizeScanFrame() {
   const frame = document.querySelector('.scan-frame');
   if (!frame) return;
 
-  const padding = 40; // space around frame
+  const padding = 40;
   const maxWidth = window.innerWidth - padding;
-  const maxHeight = window.innerHeight - padding - 120; // leave room for controls
+  const maxHeight = window.innerHeight - padding - 120;
   const size = Math.min(maxWidth, maxHeight);
 
   frame.style.width = `${size}px`;
