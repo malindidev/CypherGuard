@@ -400,5 +400,81 @@
     closeScanBtn.addEventListener('click', stopCameraQRScan);
   }
 
+let torchOn = false;
+let videoTrack = null;
+
+async function toggleTorch() {
+  if (!cameraStream) return;
+  const [track] = cameraStream.getVideoTracks();
+  videoTrack = track;
+
+  const imageCapture = new ImageCapture(track);
+  const capabilities = await imageCapture.getPhotoCapabilities().catch(() => null);
+  if (!capabilities || !capabilities.torch) {
+    showWarning('Torch not supported on this device.');
+    return;
+  }
+
+  torchOn = !torchOn;
+  try {
+    await track.applyConstraints({ advanced: [{ torch: torchOn }] });
+    showWarning(`Torch ${torchOn ? 'enabled' : 'disabled'}.`);
+  } catch (err) {
+    console.error(err);
+    showWarning('Failed to toggle torch.');
+  }
+}
+
+let scanOnlyMode = true;
+
+function startScanOnlyMode() {
+  scanOnlyMode = true;
+  startCameraQRScan();
+}
+
+function stopScanOnlyMode() {
+  scanOnlyMode = false;
+  stopCameraQRScan();
+}
+
+const originalScanCameraFrame = scanCameraFrame;
+scanCameraFrame = function() {
+  if (!scanning) return;
+
+  if (qrVideo.videoWidth === 0) {
+    requestAnimationFrame(scanCameraFrame);
+    return;
+  }
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  canvas.width = qrVideo.videoWidth;
+  canvas.height = qrVideo.videoHeight;
+  ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
+
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+  if (code && code.data) {
+    messageEl.value = code.data;
+    showWarning('QR scanned — enter passphrase to decrypt.');
+    if (scanOnlyMode) stopCameraQRScan();
+    return;
+  }
+
+  requestAnimationFrame(scanCameraFrame);
+};
+
+const torchBtn = document.getElementById('toggleTorchBtn');
+if (torchBtn) {
+  torchBtn.addEventListener('click', toggleTorch);
+}
+
+const scanOnlyBtn = document.getElementById('scanOnlyBtn');
+if (scanOnlyBtn) {
+  scanOnlyBtn.addEventListener('click', startScanOnlyMode);
+}
+  
   clearResult();
 })();
