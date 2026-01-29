@@ -154,7 +154,6 @@ html, body {
   box-shadow: 0 14px 40px rgba(53,99,247,0.14);
 }
 
-/* ACTION BUTTONS — RESTORED */
 .icon-btn {
   background: transparent;
   border: 1px solid rgba(16,24,40,0.06);
@@ -167,6 +166,12 @@ html, body {
 
 .icon-btn:hover {
   transform: translateY(-3px);
+}
+
+.icon-btn:focus,
+.icon-btn:focus-visible {
+  outline: 3px solid rgba(0,0,0,0.35);
+  outline-offset: 3px;
 }
 
 .warning {
@@ -300,3 +305,4 @@ html, body {
   .btn { flex: 1 1 auto; }
   .row { align-items: flex-start; }
 }
+
