@@ -322,5 +322,83 @@
     qrFileInput.addEventListener('change', handleQRFileUpload);
   }
 
+  const scanQRBtn = document.getElementById('scanQRBtn');
+  const cameraModal = document.getElementById('cameraModal');
+  const qrVideo = document.getElementById('qrVideo');
+  const closeScanBtn = document.getElementById('closeScanBtn');
+
+  let cameraStream = null;
+  let scanning = false;
+
+  async function startCameraQRScan() {
+    clearWarning();
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showWarning('Camera not supported in this browser.');
+      return;
+    }
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+
+      qrVideo.srcObject = cameraStream;
+      cameraModal.setAttribute('aria-hidden', 'false');
+      scanning = true;
+      scanCameraFrame();
+    } catch (err) {
+      console.error(err);
+      showWarning('Camera access denied.');
+    }
+  }
+
+  function stopCameraQRScan() {
+    scanning = false;
+
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      cameraStream = null;
+    }
+
+    cameraModal.setAttribute('aria-hidden', 'true');
+  }
+
+  function scanCameraFrame() {
+    if (!scanning) return;
+
+    if (qrVideo.videoWidth === 0) {
+      requestAnimationFrame(scanCameraFrame);
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = qrVideo.videoWidth;
+    canvas.height = qrVideo.videoHeight;
+    ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, canvas.width, canvas.height);
+
+    if (code && code.data) {
+      messageEl.value = code.data;
+      showWarning('QR scanned — enter passphrase to decrypt.');
+      stopCameraQRScan();
+      return;
+    }
+
+    requestAnimationFrame(scanCameraFrame);
+  }
+
+  if (scanQRBtn) {
+    scanQRBtn.addEventListener('click', startCameraQRScan);
+  }
+
+  if (closeScanBtn) {
+    closeScanBtn.addEventListener('click', stopCameraQRScan);
+  }
+
   clearResult();
 })();
