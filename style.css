@@ -126,7 +126,7 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
 
 .result__meta { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
 .result__label { color:var(--muted); font-size:13px; font-weight:600; }
-/* result text */
+
 .result__text {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", monospace;
   white-space:pre-wrap;
@@ -186,6 +186,7 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   border-radius: 8px;
   box-shadow: 0 6px 14px rgba(0,0,0,0.08);
 }
+
 .card__header {
   display: flex;
   align-items: center;
@@ -196,13 +197,12 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   width: 40px;
   height: auto;
   user-select: none;
-
 }
 
 .camera-modal {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0,0,0,0.9);
   display: none;
   align-items: center;
   justify-content: center;
@@ -215,8 +215,42 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
 }
 
 #qrVideo {
-  width: 90%;
-  max-width: 360px;
-  border-radius: 12px;
+  width: 92%;
+  max-width: 420px;
+  border-radius: 14px;
   background: #000;
+}
+
+.scan-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.scan-frame {
+  width: 220px;
+  height: 220px;
+  border: 3px solid rgba(255,255,255,0.85);
+  border-radius: 16px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.35);
+}
+
+.camera-controls {
+  margin-top: 16px;
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width:640px){
+  #qrVideo {
+    max-width: 100%;
+    height: auto;
+  }
+  .scan-frame {
+    width: 180px;
+    height: 180px;
+  }
 }
