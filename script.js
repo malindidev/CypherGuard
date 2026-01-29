@@ -335,6 +335,30 @@ let torchOn = false;
 let videoTrack = null;
 let scanOnlyMode = false;
 
+function resizeScanFrame() {
+  const frame = document.querySelector('.scan-frame');
+  if (!frame) return;
+
+  const padding = 40; // space around frame
+  const maxWidth = window.innerWidth - padding;
+  const maxHeight = window.innerHeight - padding - 120; // leave room for controls
+  const size = Math.min(maxWidth, maxHeight);
+
+  frame.style.width = `${size}px`;
+  frame.style.height = `${size}px`;
+}
+
+function openCameraModal() {
+  cameraModal.setAttribute('aria-hidden', 'false');
+  resizeScanFrame();
+  window.addEventListener('resize', resizeScanFrame);
+}
+
+function closeCameraModal() {
+  cameraModal.setAttribute('aria-hidden', 'true');
+  window.removeEventListener('resize', resizeScanFrame);
+}
+
 async function startCameraQRScan(scanOnly = false) {
   clearWarning();
   scanOnlyMode = scanOnly;
@@ -350,8 +374,8 @@ async function startCameraQRScan(scanOnly = false) {
     });
 
     qrVideo.srcObject = cameraStream;
-    cameraModal.setAttribute('aria-hidden', 'false');
     scanning = true;
+    openCameraModal();
     scanCameraFrame();
   } catch (err) {
     console.error(err);
@@ -367,9 +391,9 @@ function stopCameraQRScan() {
     cameraStream = null;
   }
 
-  cameraModal.setAttribute('aria-hidden', 'true');
   torchOn = false;
   videoTrack = null;
+  closeCameraModal();
 }
 
 async function toggleTorch() {
