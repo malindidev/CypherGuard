@@ -4,12 +4,11 @@
   <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
 
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <link rel="icon" href="logo.png" type="image/png" />
   <title>CypherGuard</title>
   
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
-
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -47,23 +46,19 @@
           <div class="result__meta">
             <span class="result__label">Result</span>
             <div class="result__controls">
-              <button id="copyBtn" class="icon-btn" title="Copy result to clipboard" type="button">Copy</button>
-              <button id="clearBtn" class="icon-btn" title="Clear" type="button">Clear</button>
-              <button id="qrToggleBtn" class="icon-btn" title="Show QR Code" type="button">QR</button>
-
-              <button id="scanQRBtn" class="icon-btn" title="Scan QR using camera" type="button">
-                Scan QR
-              </button>
-
-              <button id="uploadQRBtn" class="icon-btn" title="Upload QR Code" type="button">Upload QR</button>
-              <input type="file" id="qrFileInput" accept="image/*" style="display:none">
+              <button id="copyBtn" class="icon-btn" type="button">Copy</button>
+              <button id="clearBtn" class="icon-btn" type="button">Clear</button>
+              <button id="qrToggleBtn" class="icon-btn" type="button">QR</button>
+              <button id="scanQRBtn" class="icon-btn" type="button">Scan QR</button>
+              <button id="uploadQRBtn" class="icon-btn" type="button">Upload QR</button>
+              <input type="file" id="qrFileInput" accept="image/*" hidden>
             </div>
           </div>
 
-          <pre id="result" class="result__text" tabindex="0" aria-label="Encrypted or decrypted message"></pre>
+          <pre id="result" class="result__text" tabindex="0"></pre>
 
           <div id="qrContainer" class="qr-container" aria-hidden="true">
-            <div id="qrCode" aria-hidden="true"></div>
+            <div id="qrCode"></div>
             <div class="qr__actions">
               <button id="downloadQRBtn" class="btn btn--primary" type="button">Download QR</button>
             </div>
@@ -74,7 +69,7 @@
       <footer class="card__footer">
         <small>
           AES-GCM (256-bit key derived via PBKDF2).
-          Works entirely in the browser — ensure you use HTTPS for production.
+          Works entirely in the browser - ensure you use HTTPS for production.
         </small>
       </footer>
     </div>
@@ -82,7 +77,15 @@
 
   <div id="cameraModal" class="camera-modal" aria-hidden="true">
     <video id="qrVideo" autoplay playsinline></video>
-    <button id="closeScanBtn" class="btn">Close</button>
+
+    <div class="scan-overlay">
+      <div class="scan-frame"></div>
+    </div>
+
+    <div class="camera-controls">
+      <button id="torchBtn" class="icon-btn" type="button">Torch</button>
+      <button id="closeScanBtn" class="btn" type="button">Close</button>
+    </div>
   </div>
 
   <script src="qrcode.min.js"></script>
