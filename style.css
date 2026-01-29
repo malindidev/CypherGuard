@@ -247,23 +247,6 @@ html, body {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
-  justify-content: center;
-}
-
-.icon-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: none;
-  color: white;
-  font-size: 18px;
-  padding: 8px 12px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: transform 0.12s ease, background 0.12s ease;
-}
-
-.icon-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
-  transform: scale(1.1);
 }
 
 @media (max-width: 640px) {
