@@ -354,15 +354,7 @@ async function startCameraQRScan(scanOnly = false) {
     });
 
     qrVideo.srcObject = cameraStream;
-
-    // Wait until video metadata is loaded
-    await new Promise(resolve => {
-      qrVideo.onloadedmetadata = () => {
-        qrVideo.play();
-        resolve();
-      };
-    });
-
+    await new Promise(resolve => { qrVideo.onloadedmetadata = () => { qrVideo.play(); resolve(); }; });
     cameraModal.setAttribute('aria-hidden', 'false');
     scanning = true;
     scanCameraFrame();
@@ -374,12 +366,10 @@ async function startCameraQRScan(scanOnly = false) {
 
 function stopCameraQRScan() {
   scanning = false;
-
   if (cameraStream) {
     cameraStream.getTracks().forEach(track => track.stop());
     cameraStream = null;
   }
-
   cameraModal.setAttribute('aria-hidden', 'true');
   torchOn = false;
   videoTrack = null;
@@ -393,10 +383,8 @@ async function toggleTorch() {
 
   const [track] = cameraStream.getVideoTracks();
   videoTrack = track;
-
   const imageCapture = new ImageCapture(track);
   const capabilities = await imageCapture.getPhotoCapabilities().catch(() => null);
-
   if (!capabilities || !capabilities.torch) {
     showWarning('Torch not supported on this device.');
     return;
@@ -406,15 +394,13 @@ async function toggleTorch() {
   try {
     await track.applyConstraints({ advanced: [{ torch: torchOn }] });
     showWarning(`Torch ${torchOn ? 'enabled' : 'disabled'}.`);
-  } catch (err) {
-    console.error(err);
+  } catch {
     showWarning('Failed to toggle torch.');
   }
 }
 
 function scanCameraFrame() {
   if (!scanning) return;
-
   if (qrVideo.videoWidth === 0 || qrVideo.videoHeight === 0) {
     requestAnimationFrame(scanCameraFrame);
     return;
@@ -422,7 +408,6 @@ function scanCameraFrame() {
 
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-
   const frameSize = Math.min(qrVideo.videoWidth, qrVideo.videoHeight) * 0.6;
   const startX = (qrVideo.videoWidth - frameSize) / 2;
   const startY = (qrVideo.videoHeight - frameSize) / 2;
@@ -430,7 +415,6 @@ function scanCameraFrame() {
   canvas.width = frameSize;
   canvas.height = frameSize;
   ctx.drawImage(qrVideo, startX, startY, frameSize, frameSize, 0, 0, frameSize, frameSize);
-
   const imageData = ctx.getImageData(0, 0, frameSize, frameSize);
   const code = jsQR(imageData.data, frameSize, frameSize, { inversionAttempts: "dontInvert" });
 
@@ -444,10 +428,10 @@ function scanCameraFrame() {
   requestAnimationFrame(scanCameraFrame);
 }
 
-// Event listeners
 if (scanQRBtn) scanQRBtn.addEventListener('click', () => startCameraQRScan(true));
 if (closeScanBtn) closeScanBtn.addEventListener('click', stopCameraQRScan);
 if (torchBtn) torchBtn.addEventListener('click', toggleTorch);
 
   clearResult();
 })();
+
