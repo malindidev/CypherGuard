@@ -219,7 +219,7 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
   max-width: 420px;
   border-radius: 14px;
   background: #000;
-  object-fit: cover; /* <-- ensures full video fills box without distortion */
+  object-fit: cover;
 }
 
 .scan-overlay {
@@ -256,3 +256,4 @@ html,body { height:100%; margin:0; background:var(--bg); -webkit-font-smoothing:
     height: 180px;
   }
 }
+
