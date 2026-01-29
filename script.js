@@ -302,7 +302,7 @@
           return;
         }
         messageEl.value = code.data;
-        showWarning('QR code loaded — enter passphrase to decrypt.');
+        showWarning('QR code loaded - enter passphrase to decrypt.');
       };
     } catch (err) {
       console.error(err);
@@ -322,94 +322,68 @@
     qrFileInput.addEventListener('change', handleQRFileUpload);
   }
 
-  const scanQRBtn = document.getElementById('scanQRBtn');
-  const cameraModal = document.getElementById('cameraModal');
-  const qrVideo = document.getElementById('qrVideo');
-  const closeScanBtn = document.getElementById('closeScanBtn');
 
-  let cameraStream = null;
-  let scanning = false;
+const scanQRBtn = document.getElementById('scanQRBtn');
+const cameraModal = document.getElementById('cameraModal');
+const qrVideo = document.getElementById('qrVideo');
+const closeScanBtn = document.getElementById('closeScanBtn');
+const torchBtn = document.getElementById('torchBtn');
 
-  async function startCameraQRScan() {
-    clearWarning();
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      showWarning('Camera not supported in this browser.');
-      return;
-    }
-
-    try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' }
-      });
-
-      qrVideo.srcObject = cameraStream;
-      cameraModal.setAttribute('aria-hidden', 'false');
-      scanning = true;
-      scanCameraFrame();
-    } catch (err) {
-      console.error(err);
-      showWarning('Camera access denied.');
-    }
-  }
-
-  function stopCameraQRScan() {
-    scanning = false;
-
-    if (cameraStream) {
-      cameraStream.getTracks().forEach(track => track.stop());
-      cameraStream = null;
-    }
-
-    cameraModal.setAttribute('aria-hidden', 'true');
-  }
-
-  function scanCameraFrame() {
-    if (!scanning) return;
-
-    if (qrVideo.videoWidth === 0) {
-      requestAnimationFrame(scanCameraFrame);
-      return;
-    }
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    canvas.width = qrVideo.videoWidth;
-    canvas.height = qrVideo.videoHeight;
-    ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, canvas.width, canvas.height);
-
-    if (code && code.data) {
-      messageEl.value = code.data;
-      showWarning('QR scanned — enter passphrase to decrypt.');
-      stopCameraQRScan();
-      return;
-    }
-
-    requestAnimationFrame(scanCameraFrame);
-  }
-
-  if (scanQRBtn) {
-    scanQRBtn.addEventListener('click', startCameraQRScan);
-  }
-
-  if (closeScanBtn) {
-    closeScanBtn.addEventListener('click', stopCameraQRScan);
-  }
-
+let cameraStream = null;
+let scanning = false;
 let torchOn = false;
 let videoTrack = null;
+let scanOnlyMode = false;
+
+async function startCameraQRScan(scanOnly = false) {
+  clearWarning();
+  scanOnlyMode = scanOnly;
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    showWarning('Camera not supported in this browser.');
+    return;
+  }
+
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+
+    qrVideo.srcObject = cameraStream;
+    cameraModal.setAttribute('aria-hidden', 'false');
+    scanning = true;
+    scanCameraFrame();
+  } catch (err) {
+    console.error(err);
+    showWarning('Camera access denied.');
+  }
+}
+
+function stopCameraQRScan() {
+  scanning = false;
+
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+
+  cameraModal.setAttribute('aria-hidden', 'true');
+  torchOn = false;
+  videoTrack = null;
+}
 
 async function toggleTorch() {
-  if (!cameraStream) return;
+  if (!cameraStream) {
+    showWarning('Start camera first.');
+    return;
+  }
+
   const [track] = cameraStream.getVideoTracks();
   videoTrack = track;
 
   const imageCapture = new ImageCapture(track);
   const capabilities = await imageCapture.getPhotoCapabilities().catch(() => null);
+
   if (!capabilities || !capabilities.torch) {
     showWarning('Torch not supported on this device.');
     return;
@@ -425,20 +399,7 @@ async function toggleTorch() {
   }
 }
 
-let scanOnlyMode = true;
-
-function startScanOnlyMode() {
-  scanOnlyMode = true;
-  startCameraQRScan();
-}
-
-function stopScanOnlyMode() {
-  scanOnlyMode = false;
-  stopCameraQRScan();
-}
-
-const originalScanCameraFrame = scanCameraFrame;
-scanCameraFrame = function() {
+function scanCameraFrame() {
   if (!scanning) return;
 
   if (qrVideo.videoWidth === 0) {
@@ -448,7 +409,6 @@ scanCameraFrame = function() {
 
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
-
   canvas.width = qrVideo.videoWidth;
   canvas.height = qrVideo.videoHeight;
   ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
@@ -464,17 +424,11 @@ scanCameraFrame = function() {
   }
 
   requestAnimationFrame(scanCameraFrame);
-};
-
-const torchBtn = document.getElementById('toggleTorchBtn');
-if (torchBtn) {
-  torchBtn.addEventListener('click', toggleTorch);
 }
 
-const scanOnlyBtn = document.getElementById('scanOnlyBtn');
-if (scanOnlyBtn) {
-  scanOnlyBtn.addEventListener('click', startScanOnlyMode);
-}
-  
+if (scanQRBtn) scanQRBtn.addEventListener('click', () => startCameraQRScan(true));
+if (closeScanBtn) closeScanBtn.addEventListener('click', stopCameraQRScan);
+if (torchBtn) torchBtn.addEventListener('click', toggleTorch);
+
   clearResult();
 })();
