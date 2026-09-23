@@ -1,4 +1,3 @@
-const form = document.getElementById('cryptoForm');
 const messageEl = document.getElementById('message');
 const keyEl = document.getElementById('key');
 const togglePassBtn = document.getElementById('togglePassBtn');
@@ -76,11 +75,11 @@ keyEl.addEventListener('input', () => {
   if (/[^A-Za-z0-9]/.test(val)) score++;
 
   const levels = [
-    { pct: 20, color: '#ff5d7a', label: 'Very weak' },
-    { pct: 40, color: '#ff8a5d', label: 'Weak' },
-    { pct: 60, color: '#ffd15d', label: 'Fair' },
-    { pct: 80, color: '#8de85d', label: 'Strong' },
-    { pct: 100, color: '#37e8c9', label: 'Very strong' },
+    { pct: 20, color: '#a33327', label: 'very weak' },
+    { pct: 40, color: '#b5602c', label: 'weak' },
+    { pct: 60, color: '#8a7a2c', label: 'fair' },
+    { pct: 80, color: '#5a7a3c', label: 'strong' },
+    { pct: 100, color: '#3f6b4a', label: 'very strong' },
   ];
   const lvl = levels[Math.min(score, levels.length) - 1] || levels[0];
   strengthFill.style.width = `${lvl.pct}%`;
@@ -148,17 +147,17 @@ function showResult(text, label) {
 encryptBtn.addEventListener('click', async () => {
   const message = messageEl.value;
   const passphrase = keyEl.value;
-  if (!message.trim()) return showWarning('Enter a message to encrypt.');
-  if (passphrase.length < 6) return showWarning('Passphrase must be at least 6 characters.');
+  if (!message.trim()) return showWarning('Write a message to encrypt.');
+  if (passphrase.length < 6) return showWarning('Passphrase needs at least 6 characters.');
 
   encryptBtn.disabled = true;
   try {
     const result = await encryptMessage(message, passphrase);
     showResult(result, 'Encrypted (base64)');
-    showToast('Message encrypted!', 'success');
+    showToast('Message encrypted', 'success');
   } catch (err) {
     console.error(err);
-    showWarning('Encryption failed. Please try again.');
+    showWarning('Encryption failed. Try again.');
   }
   encryptBtn.disabled = false;
 });
@@ -173,9 +172,9 @@ decryptBtn.addEventListener('click', async () => {
   try {
     const result = await decryptMessage(message, passphrase);
     showResult(result, 'Decrypted');
-    showToast('Message decrypted!', 'success');
+    showToast('Message decrypted', 'success');
   } catch (err) {
-    showWarning('Decryption failed. Check your passphrase and ciphertext.');
+    showWarning('Decryption failed. Check the passphrase and ciphertext.');
   }
   decryptBtn.disabled = false;
 });
@@ -184,7 +183,7 @@ copyBtn.addEventListener('click', () => {
   const text = resultEl.textContent.trim();
   if (!text) return showToast('Nothing to copy.');
   navigator.clipboard.writeText(text)
-    .then(() => showToast('Copied to clipboard!', 'success'))
+    .then(() => showToast('Copied to clipboard', 'success'))
     .catch(() => showToast('Failed to copy.'));
 });
 
@@ -195,6 +194,7 @@ clearBtn.addEventListener('click', () => {
   qrContainer.setAttribute('aria-hidden', 'true');
 });
 
+/* ---------- QR generate / download ---------- */
 qrToggleBtn.addEventListener('click', () => {
   const text = resultEl.textContent.trim();
   if (!text) return showToast('Nothing to encode yet.');
@@ -211,7 +211,7 @@ qrToggleBtn.addEventListener('click', () => {
     text,
     width: 220,
     height: 220,
-    colorDark: '#06131a',
+    colorDark: '#2a2621',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.M,
   });
@@ -226,9 +226,10 @@ downloadQRBtn.addEventListener('click', () => {
   link.download = 'cypherguard-qr.png';
   link.href = canvas.toDataURL('image/png');
   link.click();
-  showToast('QR downloaded!', 'success');
+  showToast('QR downloaded', 'success');
 });
 
+/* ---------- QR upload (jsQR) ---------- */
 uploadQRBtn.addEventListener('click', () => qrFileInput.click());
 
 qrFileInput.addEventListener('change', e => {
@@ -245,7 +246,7 @@ qrFileInput.addEventListener('change', e => {
     const code = jsQR(imageData.data, imageData.width, imageData.height);
     if (code) {
       messageEl.value = code.data;
-      showToast('QR decoded into message field!', 'success');
+      showToast('QR decoded into message field', 'success');
     } else {
       showToast('No QR code found in that image.');
     }
@@ -281,7 +282,7 @@ function scanLoop() {
       const code = jsQR(imageData.data, imageData.width, imageData.height);
       if (code && code.data) {
         messageEl.value = code.data;
-        showToast('QR scanned into message field!', 'success');
+        showToast('QR scanned into message field', 'success');
         stopScan();
         return;
       }
