@@ -8,121 +8,98 @@
   <link rel="icon" href="logo.png" type="image/png" />
   <title>CypherGuard</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <div class="bg-grid" aria-hidden="true"></div>
-
   <main class="app">
-    <div class="card">
-      <header class="card__header">
-        <div class="logo-badge">
-          <svg viewBox="0 0 24 24" fill="none" class="logo-icon"><path d="M12 2L4 5V11C4 16.5 7.4 20.7 12 22C16.6 20.7 20 16.5 20 11V5L12 2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12L11 14L15.5 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="paper-stack">
+      <div class="card">
+
+        <div class="stamp" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" class="stamp-icon"><rect x="5" y="11" width="14" height="9" rx="1" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V7A4 4 0 0 1 16 7V11" stroke="currentColor" stroke-width="1.6"/></svg>
+          <span>AES&#8209;256</span>
         </div>
-        <div class="header-text">
+
+        <header class="card__header">
           <h1 class="title">CypherGuard</h1>
-          <p class="subtitle">AES-GCM + PBKDF2, entirely client-side. Nothing you type ever leaves this tab.</p>
-        </div>
-      </header>
+          <p class="subtitle">A field cipher for short messages. AES-GCM, key stretched with PBKDF2, all of it running in this browser tab. Nothing you type is sent anywhere.</p>
+        </header>
 
-      <form id="cryptoForm" class="form" autocomplete="off" onsubmit="return false;">
-        <label class="field">
-          <span class="field__label">Message</span>
-          <textarea id="message" class="input input--textarea" rows="4" placeholder="Type or paste your message..."></textarea>
-        </label>
-
-        <div class="row">
-          <label class="field field--small">
-            <span class="field__label">Passphrase</span>
-            <div class="pass-wrapper">
-              <input id="key" class="input" type="password" placeholder="Minimum 6 characters" />
-              <button id="togglePassBtn" class="pass-toggle" type="button" title="Show passphrase">
-                <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M1.5 12C1.5 12 5 5 12 5C19 5 22.5 12 22.5 12C22.5 12 19 19 12 19C5 19 1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
-              </button>
-            </div>
-            <div class="strength" id="strength" aria-hidden="true">
-              <div class="strength__bar"><span id="strengthFill"></span></div>
-              <span class="strength__label" id="strengthLabel"></span>
-            </div>
+        <form id="cryptoForm" class="form" autocomplete="off" onsubmit="return false;">
+          <label class="field">
+            <span class="field__label">Message</span>
+            <textarea id="message" class="input input--textarea" rows="4" placeholder="Write the message here..."></textarea>
           </label>
 
-          <div class="actions">
-            <button id="encryptBtn" class="btn btn--primary" type="button">
-              <svg viewBox="0 0 24 24" fill="none" class="icon"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V7A4 4 0 0 1 16 7V11" stroke="currentColor" stroke-width="1.7"/></svg>
-              <span>Encrypt</span>
-            </button>
-            <button id="decryptBtn" class="btn btn--ghost" type="button">
-              <svg viewBox="0 0 24 24" fill="none" class="icon"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V7A4 4 0 0 1 15.3 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-              <span>Decrypt</span>
-            </button>
-          </div>
-        </div>
+          <div class="row">
+            <label class="field field--small">
+              <span class="field__label">Passphrase</span>
+              <div class="pass-wrapper">
+                <input id="key" class="input" type="password" placeholder="At least 6 characters" />
+                <button id="togglePassBtn" class="pass-toggle" type="button" title="Show passphrase">
+                  <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M1.5 12C1.5 12 5 5 12 5C19 5 22.5 12 22.5 12C22.5 12 19 19 12 19C5 19 1.5 12 1.5 12Z" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></svg>
+                </button>
+              </div>
+              <div class="strength" id="strength" aria-hidden="true">
+                <div class="strength__bar"><span id="strengthFill"></span></div>
+                <span class="strength__label" id="strengthLabel"></span>
+              </div>
+            </label>
 
-        <div id="warning" class="warning" aria-live="polite"></div>
-
-        <div id="resultCard" class="result" aria-hidden="true">
-          <div class="result__meta">
-            <span class="result__label" id="resultLabel">Result</span>
-            <div class="result__controls">
-              <button id="copyBtn" class="icon-btn" type="button" title="Copy">
-                <svg viewBox="0 0 24 24" fill="none" class="icon"><rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M5 15V5C5 3.9 5.9 3 7 3H15" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-              </button>
-              <button id="clearBtn" class="icon-btn" type="button" title="Clear">
-                <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-              </button>
-              <button id="qrToggleBtn" class="icon-btn" type="button" title="Show as QR">
-                <svg viewBox="0 0 24 24" fill="none" class="icon"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><path d="M14 14H17V17H14V14ZM18 14H21V17H18V14ZM14 18H17V21H14V18ZM18 18H21V21H18V18Z" fill="currentColor"/></svg>
-              </button>
-              <button id="scanQRBtn" class="icon-btn" type="button" title="Scan QR with camera">
-                <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M4 8V6A2 2 0 0 1 6 4H8M16 4H18A2 2 0 0 1 20 6V8M20 16V18A2 2 0 0 1 18 20H16M8 20H6A2 2 0 0 1 4 18V16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="9" y="9" width="6" height="6" stroke="currentColor" stroke-width="1.7"/></svg>
-              </button>
-              <button id="uploadQRBtn" class="icon-btn" type="button" title="Upload QR image">
-                <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M12 16V4M12 4L8 8M12 4L16 8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 16V18A2 2 0 0 0 6 20H18A2 2 0 0 0 20 18V16" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-              </button>
-              <input type="file" id="qrFileInput" accept="image/*" hidden>
+            <div class="actions">
+              <button id="encryptBtn" class="btn btn--stamp" type="button">Encrypt</button>
+              <button id="decryptBtn" class="btn btn--outline" type="button">Decrypt</button>
             </div>
           </div>
 
-          <pre id="result" class="result__text" tabindex="0"></pre>
+          <div id="warning" class="warning" aria-live="polite"></div>
 
-          <div id="qrContainer" class="qr-container" aria-hidden="true">
-            <div id="qrCode"></div>
-            <div class="qr__actions">
-              <button id="downloadQRBtn" class="btn btn--primary" type="button">
-                <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M12 3V15M12 15L8 11M12 15L16 11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17V18A2 2 0 0 0 6 20H18A2 2 0 0 0 20 18V17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-                <span>Download QR</span>
-              </button>
+          <div id="resultCard" class="result" aria-hidden="true">
+            <div class="result__meta">
+              <span class="result__label" id="resultLabel">Result</span>
+              <div class="result__controls">
+                <button id="copyBtn" class="text-btn" type="button">Copy</button>
+                <button id="clearBtn" class="text-btn" type="button">Clear</button>
+                <button id="qrToggleBtn" class="text-btn" type="button">QR</button>
+                <button id="scanQRBtn" class="text-btn" type="button">Scan</button>
+                <button id="uploadQRBtn" class="text-btn" type="button">Upload</button>
+                <input type="file" id="qrFileInput" accept="image/*" hidden>
+              </div>
+            </div>
+
+            <pre id="result" class="result__text" tabindex="0"></pre>
+
+            <div id="qrContainer" class="qr-container" aria-hidden="true">
+              <div id="qrCode"></div>
+              <div class="qr__actions">
+                <button id="downloadQRBtn" class="btn btn--outline btn--small" type="button">Download QR</button>
+              </div>
             </div>
           </div>
-        </div>
-      </form>
+        </form>
 
-      <footer class="card__footer">
-        <svg viewBox="0 0 24 24" fill="none" class="icon icon--muted"><path d="M12 2L4 5V11C4 16.5 7.4 20.7 12 22C16.6 20.7 20 16.5 20 11V5L12 2Z" stroke="currentColor" stroke-width="1.5"/></svg>
-        <span>AES-GCM, 256-bit key derived via PBKDF2 (150,000 iterations). Runs fully in your browser &dash; use HTTPS in production.</span>
-      </footer>
+        <footer class="card__footer">
+          256-bit key, PBKDF2 with 150,000 rounds. Use HTTPS if you put this in production.
+        </footer>
+      </div>
     </div>
   </main>
 
   <div id="toastContainer"></div>
 
   <div id="cameraModal" class="camera-modal" aria-hidden="true">
-    <button id="closeScanBtn" class="camera-close" type="button" title="Close">
-      <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M6 6L18 18M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </button>
+    <button id="closeScanBtn" class="camera-close" type="button" title="Close">&times;</button>
     <video id="qrVideo" autoplay playsinline muted></video>
 
     <div class="scan-overlay">
       <div class="scan-frame"><span class="scan-line"></span></div>
-      <p class="scan-hint">Point your camera at a CypherGuard QR code</p>
+      <p class="scan-hint">Point the camera at a CypherGuard QR code</p>
     </div>
 
     <div class="camera-controls">
-      <button id="torchBtn" class="icon-btn camera" type="button" title="Toggle torch">
-        <svg viewBox="0 0 24 24" fill="none" class="icon"><path d="M9 21H15M12 3C9 3 7 5.5 7 8C7 10 8 11 9 12C9.6 12.5 10 13.3 10 14V16H14V14C14 13.3 14.4 12.5 15 12C16 11 17 10 17 8C17 5.5 15 3 12 3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
-      </button>
+      <button id="torchBtn" class="text-btn text-btn--light" type="button">Torch</button>
     </div>
   </div>
 
