@@ -1,437 +1,320 @@
-(() => {
-  const messageEl = document.getElementById('message');
-  const keyEl = document.getElementById('key');
-  const encryptBtn = document.getElementById('encryptBtn');
-  const decryptBtn = document.getElementById('decryptBtn');
-  const copyBtn = document.getElementById('copyBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const qrToggleBtn = document.getElementById('qrToggleBtn');
-  const qrContainer = document.getElementById('qrContainer');
-  const qrCodeEl = document.getElementById('qrCode');
-  const downloadQRBtn = document.getElementById('downloadQRBtn');
-  const resultCard = document.getElementById('resultCard');
-  const resultEl = document.getElementById('result');
-  const warningEl = document.getElementById('warning');
-  const togglePassVisibilityBtn = document.getElementById('togglePassVisibility');
-  const qrFileInput = document.getElementById('qrFileInput');
-  const uploadQRBtn = document.getElementById('uploadQRBtn');
+const form = document.getElementById('cryptoForm');
+const messageEl = document.getElementById('message');
+const keyEl = document.getElementById('key');
+const togglePassBtn = document.getElementById('togglePassBtn');
+const strengthWrap = document.getElementById('strength');
+const strengthFill = document.getElementById('strengthFill');
+const strengthLabel = document.getElementById('strengthLabel');
 
-  const PBKDF2_ITERATIONS = 100000;
-  const SALT_BYTES = 16;
-  const IV_BYTES = 12;
-  const KEY_LENGTH = 256;
+const encryptBtn = document.getElementById('encryptBtn');
+const decryptBtn = document.getElementById('decryptBtn');
+const warningEl = document.getElementById('warning');
 
-  let qrGenerated = false;
-  let qrInstance = null;
-  let copyTimeout;
+const resultCard = document.getElementById('resultCard');
+const resultLabel = document.getElementById('resultLabel');
+const resultEl = document.getElementById('result');
+const copyBtn = document.getElementById('copyBtn');
+const clearBtn = document.getElementById('clearBtn');
+const qrToggleBtn = document.getElementById('qrToggleBtn');
+const scanQRBtn = document.getElementById('scanQRBtn');
+const uploadQRBtn = document.getElementById('uploadQRBtn');
+const qrFileInput = document.getElementById('qrFileInput');
 
-  function showWarning(text) {
-    warningEl.textContent = text;
-    warningEl.classList.add('show', 'shake');
-    setTimeout(() => warningEl.classList.remove('shake'), 450);
+const qrContainer = document.getElementById('qrContainer');
+const qrCodeEl = document.getElementById('qrCode');
+const downloadQRBtn = document.getElementById('downloadQRBtn');
+
+const cameraModal = document.getElementById('cameraModal');
+const qrVideo = document.getElementById('qrVideo');
+const torchBtn = document.getElementById('torchBtn');
+const closeScanBtn = document.getElementById('closeScanBtn');
+
+const toastContainer = document.getElementById('toastContainer');
+
+let qrInstance = null;
+let cameraStream = null;
+let scanRafId = null;
+let torchOn = false;
+
+function showToast(msg, type = 'error') {
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  if (type === 'success') toast.classList.add('success');
+  toast.textContent = msg;
+  toastContainer.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
+let warnTimeout;
+function showWarning(msg) {
+  clearTimeout(warnTimeout);
+  warningEl.textContent = msg;
+  warningEl.classList.add('show', 'shake');
+  setTimeout(() => warningEl.classList.remove('shake'), 450);
+  warnTimeout = setTimeout(() => warningEl.classList.remove('show'), 4000);
+}
+
+togglePassBtn.addEventListener('click', () => {
+  const isPassword = keyEl.type === 'password';
+  keyEl.type = isPassword ? 'text' : 'password';
+  togglePassBtn.classList.toggle('active', isPassword);
+});
+
+keyEl.addEventListener('input', () => {
+  const val = keyEl.value;
+  if (!val) {
+    strengthWrap.classList.remove('show');
+    return;
   }
+  strengthWrap.classList.add('show');
 
-  function clearWarning() {
-    warningEl.textContent = '';
-    warningEl.classList.remove('show');
+  let score = 0;
+  if (val.length >= 6) score++;
+  if (val.length >= 12) score++;
+  if (/[A-Z]/.test(val) && /[a-z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+
+  const levels = [
+    { pct: 20, color: '#ff5d7a', label: 'Very weak' },
+    { pct: 40, color: '#ff8a5d', label: 'Weak' },
+    { pct: 60, color: '#ffd15d', label: 'Fair' },
+    { pct: 80, color: '#8de85d', label: 'Strong' },
+    { pct: 100, color: '#37e8c9', label: 'Very strong' },
+  ];
+  const lvl = levels[Math.min(score, levels.length) - 1] || levels[0];
+  strengthFill.style.width = `${lvl.pct}%`;
+  strengthFill.style.background = lvl.color;
+  strengthLabel.textContent = lvl.label;
+});
+
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+function toBase64(bytes) {
+  let bin = '';
+  bytes.forEach(b => (bin += String.fromCharCode(b)));
+  return btoa(bin);
+}
+function fromBase64(str) {
+  const bin = atob(str);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+async function deriveKey(passphrase, salt) {
+  const baseKey = await crypto.subtle.importKey('raw', enc.encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 150000, hash: 'SHA-256' },
+    baseKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptMessage(message, passphrase) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(passphrase, salt);
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(message)));
+  const payload = new Uint8Array(salt.length + iv.length + ciphertext.length);
+  payload.set(salt, 0);
+  payload.set(iv, salt.length);
+  payload.set(ciphertext, salt.length + iv.length);
+  return toBase64(payload);
+}
+
+async function decryptMessage(payloadB64, passphrase) {
+  const payload = fromBase64(payloadB64.trim());
+  if (payload.length < 29) throw new Error('malformed');
+  const salt = payload.slice(0, 16);
+  const iv = payload.slice(16, 28);
+  const ciphertext = payload.slice(28);
+  const key = await deriveKey(passphrase, salt);
+  const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ciphertext);
+  return dec.decode(plainBuf);
+}
+
+function showResult(text, label) {
+  resultLabel.textContent = label;
+  resultEl.textContent = text;
+  resultCard.setAttribute('aria-hidden', 'false');
+  qrContainer.classList.remove('show');
+  qrContainer.setAttribute('aria-hidden', 'true');
+}
+
+encryptBtn.addEventListener('click', async () => {
+  const message = messageEl.value;
+  const passphrase = keyEl.value;
+  if (!message.trim()) return showWarning('Enter a message to encrypt.');
+  if (passphrase.length < 6) return showWarning('Passphrase must be at least 6 characters.');
+
+  encryptBtn.disabled = true;
+  try {
+    const result = await encryptMessage(message, passphrase);
+    showResult(result, 'Encrypted (base64)');
+    showToast('Message encrypted!', 'success');
+  } catch (err) {
+    console.error(err);
+    showWarning('Encryption failed. Please try again.');
   }
+  encryptBtn.disabled = false;
+});
 
-  function showResult(text) {
-    resultEl.textContent = text;
-    resultCard.setAttribute('aria-hidden', 'false');
-    resultEl.setAttribute('aria-live', 'polite');
+decryptBtn.addEventListener('click', async () => {
+  const message = messageEl.value;
+  const passphrase = keyEl.value;
+  if (!message.trim()) return showWarning('Paste the encrypted text to decrypt.');
+  if (!passphrase) return showWarning('Enter the passphrase used to encrypt it.');
+
+  decryptBtn.disabled = true;
+  try {
+    const result = await decryptMessage(message, passphrase);
+    showResult(result, 'Decrypted');
+    showToast('Message decrypted!', 'success');
+  } catch (err) {
+    showWarning('Decryption failed. Check your passphrase and ciphertext.');
+  }
+  decryptBtn.disabled = false;
+});
+
+copyBtn.addEventListener('click', () => {
+  const text = resultEl.textContent.trim();
+  if (!text) return showToast('Nothing to copy.');
+  navigator.clipboard.writeText(text)
+    .then(() => showToast('Copied to clipboard!', 'success'))
+    .catch(() => showToast('Failed to copy.'));
+});
+
+clearBtn.addEventListener('click', () => {
+  resultEl.textContent = '';
+  resultCard.setAttribute('aria-hidden', 'true');
+  qrContainer.classList.remove('show');
+  qrContainer.setAttribute('aria-hidden', 'true');
+});
+
+qrToggleBtn.addEventListener('click', () => {
+  const text = resultEl.textContent.trim();
+  if (!text) return showToast('Nothing to encode yet.');
+
+  const isShown = qrContainer.classList.contains('show');
+  if (isShown) {
     qrContainer.classList.remove('show');
     qrContainer.setAttribute('aria-hidden', 'true');
-    qrGenerated = false;
-    qrCodeEl.innerHTML = '';
+    return;
   }
 
-  function clearResult() {
-    resultEl.textContent = '';
-    resultCard.setAttribute('aria-hidden', 'true');
-    resultEl.removeAttribute('aria-live');
-    qrContainer.classList.remove('show');
-    qrContainer.setAttribute('aria-hidden', 'true');
-    qrGenerated = false;
-    qrCodeEl.innerHTML = '';
-  }
+  qrCodeEl.innerHTML = '';
+  qrInstance = new QRCode(qrCodeEl, {
+    text,
+    width: 220,
+    height: 220,
+    colorDark: '#06131a',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M,
+  });
+  qrContainer.classList.add('show');
+  qrContainer.setAttribute('aria-hidden', 'false');
+});
 
-  function concatArrayBuffers(...buffers) {
-    const total = buffers.reduce((sum, b) => sum + b.byteLength, 0);
-    const tmp = new Uint8Array(total);
-    let offset = 0;
-    for (const b of buffers) {
-      tmp.set(new Uint8Array(b), offset);
-      offset += b.byteLength;
-    }
-    return tmp.buffer;
-  }
+downloadQRBtn.addEventListener('click', () => {
+  const canvas = qrCodeEl.querySelector('canvas');
+  if (!canvas) return showToast('Generate a QR code first.');
+  const link = document.createElement('a');
+  link.download = 'cypherguard-qr.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  showToast('QR downloaded!', 'success');
+});
 
-  function arrayBufferToBase64(buffer) {
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    const chunkSize = 0x8000;
-    for (let i = 0; i < bytes.length; i += chunkSize) {
-      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
-    }
-    return btoa(binary);
-  }
+uploadQRBtn.addEventListener('click', () => qrFileInput.click());
 
-  function base64ToArrayBuffer(base64) {
-    const binary = atob(base64);
-    const len = binary.length;
-    const bytes = new Uint8Array(len);
-    for (let i = 0; i < len; i++) {
-      bytes[i] = binary.charCodeAt(i);
+qrFileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width;
+    canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height);
+    if (code) {
+      messageEl.value = code.data;
+      showToast('QR decoded into message field!', 'success');
+    } else {
+      showToast('No QR code found in that image.');
     }
-    return bytes.buffer;
-  }
+    URL.revokeObjectURL(img.src);
+  };
+  img.src = URL.createObjectURL(file);
+  qrFileInput.value = '';
+});
 
-  function getRandomBytes(length) {
-    return crypto.getRandomValues(new Uint8Array(length)).buffer;
+scanQRBtn.addEventListener('click', async () => {
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    qrVideo.srcObject = cameraStream;
+    cameraModal.setAttribute('aria-hidden', 'false');
+    await qrVideo.play();
+    scanLoop();
+  } catch (err) {
+    showToast('Camera access denied.');
   }
+});
 
-  async function deriveKeyFromPassphrase(passphrase, salt) {
-    const enc = new TextEncoder();
-    const baseKey = await crypto.subtle.importKey(
-      'raw',
-      enc.encode(passphrase),
-      'PBKDF2',
-      false,
-      ['deriveKey']
-    );
-    return crypto.subtle.deriveKey(
-      {
-        name: 'PBKDF2',
-        salt: salt,
-        iterations: PBKDF2_ITERATIONS,
-        hash: 'SHA-256'
-      },
-      baseKey,
-      { name: 'AES-GCM', length: KEY_LENGTH },
-      false,
-      ['encrypt', 'decrypt']
-    );
-  }
+function scanLoop() {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
-  async function encryptString(plaintext, passphrase) {
-    const salt = getRandomBytes(SALT_BYTES);
-    const iv = getRandomBytes(IV_BYTES);
-    const key = await deriveKeyFromPassphrase(passphrase, salt);
-    const encoded = new TextEncoder().encode(plaintext);
-    const cipherBuffer = await crypto.subtle.encrypt(
-      { name: 'AES-GCM', iv: new Uint8Array(iv) },
-      key,
-      encoded
-    );
-    return arrayBufferToBase64(concatArrayBuffers(salt, iv, cipherBuffer));
-  }
-
-  async function decryptString(payloadBase64, passphrase) {
-    const full = base64ToArrayBuffer(payloadBase64);
-    if (full.byteLength < (SALT_BYTES + IV_BYTES + 1)) {
-      throw new Error('Payload too short or invalid.');
-    }
-    const fullBytes = new Uint8Array(full);
-    const salt = fullBytes.slice(0, SALT_BYTES).buffer;
-    const iv = fullBytes.slice(SALT_BYTES, SALT_BYTES + IV_BYTES).buffer;
-    const ciphertext = fullBytes.slice(SALT_BYTES + IV_BYTES).buffer;
-    const key = await deriveKeyFromPassphrase(passphrase, salt);
-    const plainBuffer = await crypto.subtle.decrypt(
-      { name: 'AES-GCM', iv: new Uint8Array(iv) },
-      key,
-      ciphertext
-    );
-    return new TextDecoder().decode(plainBuffer);
-  }
-
-  async function handleEncrypt() {
-    clearWarning();
-    if (!window.crypto || !crypto.subtle) {
-      showWarning('Web Crypto API not supported in this browser.');
-      return;
-    }
-    const plaintext = messageEl.value;
-    const pass = keyEl.value;
-    if (!plaintext || !plaintext.trim()) {
-      clearResult();
-      showWarning('Please enter a message to encrypt.');
-      return;
-    }
-    if (!pass || pass.length < 6) {
-      showWarning('Passphrase must be at least 6 characters.');
-      return;
-    }
-    try {
-      encryptBtn.disabled = true;
-      encryptBtn.textContent = 'Encrypting…';
-      showResult(await encryptString(plaintext, pass));
-    } catch (err) {
-      console.error(err);
-      showWarning('Encryption failed.');
-    } finally {
-      encryptBtn.disabled = false;
-      encryptBtn.textContent = 'Encrypt';
-    }
-  }
-
-  async function handleDecrypt() {
-    clearWarning();
-    if (!window.crypto || !crypto.subtle) {
-      showWarning('Web Crypto API not supported in this browser.');
-      return;
-    }
-    const payload = messageEl.value.trim();
-    const pass = keyEl.value;
-    if (!payload) {
-      clearResult();
-      showWarning('Please paste the Base64 payload.');
-      return;
-    }
-    if (!pass || pass.length < 6) {
-      showWarning('Passphrase must be at least 6 characters.');
-      return;
-    }
-    try {
-      decryptBtn.disabled = true;
-      decryptBtn.textContent = 'Decrypting…';
-      showResult(await decryptString(payload, pass));
-    } catch (err) {
-      console.error(err);
-      showWarning('Failed to decrypt - passphrase may be wrong.');
-    } finally {
-      decryptBtn.disabled = false;
-      decryptBtn.textContent = 'Decrypt';
-    }
-  }
-
-  async function copyResult() {
-    const text = resultEl.textContent;
-    if (!text) {
-      showWarning('Nothing to copy.');
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(text);
-      resetCopyButtonText();
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      ta.remove();
-      resetCopyButtonText();
-    }
-  }
-
-  function resetCopyButtonText() {
-    clearTimeout(copyTimeout);
-    const original = copyBtn.textContent;
-    copyBtn.textContent = 'Copied';
-    copyTimeout = setTimeout(() => { copyBtn.textContent = original; }, 1300);
-  }
-
-  function clearAll() {
-    messageEl.value = '';
-    keyEl.value = '';
-    clearWarning();
-    clearResult();
-  }
-
-  function toggleQR() {
-    if (qrContainer.classList.contains('show')) {
-      qrContainer.classList.remove('show');
-      qrContainer.setAttribute('aria-hidden', 'true');
-      return;
-    }
-    if (!qrGenerated) {
-      try {
-        qrInstance = new QRCode(qrCodeEl, {
-          text: resultEl.textContent,
-          width: 240,
-          height: 240,
-          colorDark: "#0b1320",
-          colorLight: "#ffffff",
-          correctLevel: QRCode.CorrectLevel.M
-        });
-        qrGenerated = true;
-      } catch (err) {
-        console.error(err);
-        showWarning('QR generation failed.');
+  const tick = () => {
+    if (!cameraStream) return;
+    if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
+      canvas.width = qrVideo.videoWidth;
+      canvas.height = qrVideo.videoHeight;
+      ctx.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code && code.data) {
+        messageEl.value = code.data;
+        showToast('QR scanned into message field!', 'success');
+        stopScan();
         return;
       }
     }
-    qrContainer.classList.add('show');
-    qrContainer.setAttribute('aria-hidden', 'false');
-  }
-
-  function downloadQR() {
-    if (!qrGenerated) return;
-    const canvas = qrCodeEl.querySelector('canvas');
-    const img = qrCodeEl.querySelector('img');
-    let dataUrl = canvas ? canvas.toDataURL('image/png') : (img && img.src ? img.src : null);
-    if (!dataUrl) {
-      showWarning('No QR image to download.');
-      return;
-    }
-    const link = document.createElement('a');
-    link.href = dataUrl;
-    link.download = 'encrypted_qr.png';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-  }
-
-  async function handleQRFileUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    try {
-      const img = document.createElement('img');
-      img.src = URL.createObjectURL(file);
-      img.onload = async () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, img.width, img.height);
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(imageData.data, canvas.width, canvas.height);
-        if (!code) {
-          showWarning('No QR code found.');
-          return;
-        }
-        messageEl.value = code.data;
-        showWarning('QR code loaded - enter passphrase to decrypt.');
-      };
-    } catch (err) {
-      console.error(err);
-      showWarning('Failed to process QR image.');
-    }
-  }
-
-  encryptBtn.addEventListener('click', handleEncrypt);
-  decryptBtn.addEventListener('click', handleDecrypt);
-  copyBtn.addEventListener('click', copyResult);
-  clearBtn.addEventListener('click', clearAll);
-  qrToggleBtn.addEventListener('click', toggleQR);
-  downloadQRBtn.addEventListener('click', downloadQR);
-
-  if (uploadQRBtn && qrFileInput) {
-    uploadQRBtn.addEventListener('click', () => { qrFileInput.click(); });
-    qrFileInput.addEventListener('change', handleQRFileUpload);
-  }
-
-
-const scanQRBtn = document.getElementById('scanQRBtn');
-const cameraModal = document.getElementById('cameraModal');
-const qrVideo = document.getElementById('qrVideo');
-const closeScanBtn = document.getElementById('closeScanBtn');
-const torchBtn = document.getElementById('torchBtn');
-
-let cameraStream = null;
-let scanning = false;
-let torchOn = false;
-let videoTrack = null;
-let scanOnlyMode = false;
-
-async function startCameraQRScan(scanOnly = false) {
-  clearWarning();
-  scanOnlyMode = scanOnly;
-
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showWarning('Camera not supported in this browser.');
-    return;
-  }
-
-  try {
-    cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: { 
-        facingMode: 'environment',
-        width: { ideal: 1280 },
-        height: { ideal: 720 }
-      }
-    });
-
-    qrVideo.srcObject = cameraStream;
-    await new Promise(resolve => { qrVideo.onloadedmetadata = () => { qrVideo.play(); resolve(); }; });
-    cameraModal.setAttribute('aria-hidden', 'false');
-    scanning = true;
-    scanCameraFrame();
-  } catch (err) {
-    console.error(err);
-    showWarning('Camera access denied.');
-  }
+    scanRafId = requestAnimationFrame(tick);
+  };
+  scanRafId = requestAnimationFrame(tick);
 }
 
-function stopCameraQRScan() {
-  scanning = false;
+function stopScan() {
+  if (scanRafId) cancelAnimationFrame(scanRafId);
+  scanRafId = null;
+  cameraModal.setAttribute('aria-hidden', 'true');
   if (cameraStream) {
-    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream.getTracks().forEach(t => t.stop());
     cameraStream = null;
   }
-  cameraModal.setAttribute('aria-hidden', 'true');
   torchOn = false;
-  videoTrack = null;
+  torchBtn.classList.remove('active');
 }
 
-async function toggleTorch() {
-  if (!cameraStream) {
-    showWarning('Start camera first.');
-    return;
-  }
+closeScanBtn.addEventListener('click', stopScan);
 
-  const [track] = cameraStream.getVideoTracks();
-  videoTrack = track;
-  const imageCapture = new ImageCapture(track);
-  const capabilities = await imageCapture.getPhotoCapabilities().catch(() => null);
-  if (!capabilities || !capabilities.torch) {
-    showWarning('Torch not supported on this device.');
-    return;
-  }
-
-  torchOn = !torchOn;
+torchBtn.addEventListener('click', async () => {
+  if (!cameraStream) return;
+  const track = cameraStream.getVideoTracks()[0];
+  const capabilities = track.getCapabilities ? track.getCapabilities() : {};
+  if (!capabilities.torch) return showToast('Torch not supported on this device.');
   try {
+    torchOn = !torchOn;
     await track.applyConstraints({ advanced: [{ torch: torchOn }] });
-    showWarning(`Torch ${torchOn ? 'enabled' : 'disabled'}.`);
+    torchBtn.classList.toggle('active', torchOn);
   } catch {
-    showWarning('Failed to toggle torch.');
+    showToast('Could not toggle torch.');
   }
-}
-
-function scanCameraFrame() {
-  if (!scanning) return;
-  if (qrVideo.videoWidth === 0 || qrVideo.videoHeight === 0) {
-    requestAnimationFrame(scanCameraFrame);
-    return;
-  }
-
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-  const frameSize = Math.min(qrVideo.videoWidth, qrVideo.videoHeight) * 0.6;
-  const startX = (qrVideo.videoWidth - frameSize) / 2;
-  const startY = (qrVideo.videoHeight - frameSize) / 2;
-
-  canvas.width = frameSize;
-  canvas.height = frameSize;
-  ctx.drawImage(qrVideo, startX, startY, frameSize, frameSize, 0, 0, frameSize, frameSize);
-  const imageData = ctx.getImageData(0, 0, frameSize, frameSize);
-  const code = jsQR(imageData.data, frameSize, frameSize, { inversionAttempts: "dontInvert" });
-
-  if (code && code.data) {
-    messageEl.value = code.data;
-    showWarning('QR scanned — enter passphrase to decrypt.');
-    if (scanOnlyMode) stopCameraQRScan();
-    return;
-  }
-
-  requestAnimationFrame(scanCameraFrame);
-}
-
-if (scanQRBtn) scanQRBtn.addEventListener('click', () => startCameraQRScan(true));
-if (closeScanBtn) closeScanBtn.addEventListener('click', stopCameraQRScan);
-if (torchBtn) torchBtn.addEventListener('click', toggleTorch);
-
-  clearResult();
-})();
-
+});
